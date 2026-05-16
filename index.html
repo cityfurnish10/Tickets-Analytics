@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Anjali Upgrade — AI gap analysis across 441 Cityfurnish support tickets. Identifies where Anjali fails and what API integrations fix it.">
+<title>Anjali Upgrade — Cityfurnish AI Gap Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Poppins', sans-serif; background: #f5f4f2; color: #222; min-height: 100vh; }
+.shell { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── Top Bar ── */
+.topbar {
+  background: #fff; border-bottom: 0.5px solid rgba(0,0,0,.1);
+  padding: 0 28px; display: flex; align-items: stretch; flex-shrink: 0;
+}
+.topbar-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 0; margin-right: 32px; flex-shrink: 0;
+}
+.brand-dot {
+  width: 26px; height: 26px; background: #534AB7; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: #fff; font-weight: 700;
+}
+.brand-text { font-size: 13px; font-weight: 600; color: #222; line-height: 1.2; }
+.brand-sub  { font-size: 11px; color: #888; font-weight: 400; }
+.tab-nav { display: flex; align-items: stretch; flex: 1; }
+.tab-btn {
+  padding: 0 22px; border: none; background: transparent; cursor: pointer;
+  font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 500; color: #666;
+  border-bottom: 2px solid transparent; transition: color .15s, border-color .15s;
+  display: flex; align-items: center; gap: 8px; white-space: nowrap;
+}
+.tab-btn:hover { color: #534AB7; }
+.tab-btn.active { color: #534AB7; border-bottom-color: #534AB7; }
+.tab-count { font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 8px; background: #f5f4f2; color: #888; }
+
+/* ── Tab Panels ── */
+.tab-panel { display: none; flex: 1; overflow: auto; }
+.tab-panel.active { display: flex; flex-direction: column; }
+
+/* ── Shared scroll wrapper ── */
+.page-scroll { padding: 32px 32px 64px; max-width: 1040px; margin: 0 auto; width: 100%; }
+
+/* ── Shared section label ── */
+.sec-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #aaa; margin-bottom: 10px; }
+
+/* ────────────────────────────────────────
+   OVERVIEW
+──────────────────────────────────────── */
+.ov-title { font-size: 20px; font-weight: 700; color: #222; margin-bottom: 4px; }
+.ov-sub   { font-size: 13px; color: #888; margin-bottom: 20px; }
+
+.stat-strip { display: flex; background: #fff; border-radius: 12px; border: 0.5px solid rgba(0,0,0,.08); overflow: hidden; margin-bottom: 24px; }
+.stat-cell  { flex: 1; padding: 14px 20px; border-right: 0.5px solid rgba(0,0,0,.07); }
+.stat-cell:last-child { border-right: none; }
+.stat-val { font-size: 24px; font-weight: 700; line-height: 1.1; margin-bottom: 2px; }
+.stat-lbl { font-size: 11px; color: #888; }
+
+.cat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 20px; }
+.cat-card { background: #fff; border-radius: 14px; border: 0.5px solid rgba(0,0,0,.09); overflow: hidden; display: flex; flex-direction: column; }
+.cc-head  { padding: 16px 18px 14px; border-bottom: 0.5px solid rgba(0,0,0,.06); }
+.cc-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.cc-title { font-size: 15px; font-weight: 700; color: #222; margin-bottom: 2px; }
+.cc-meta  { font-size: 11px; color: #999; }
+.cc-section-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #aaa; padding: 12px 18px 6px; }
+.cc-divider { height: 0.5px; background: rgba(0,0,0,.06); margin: 4px 18px 0; }
+
+.prob-list { padding: 0 18px 4px; }
+.prob-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid rgba(0,0,0,.05); }
+.prob-item:last-child { border-bottom: none; }
+.prob-rank { font-size: 11px; font-weight: 700; min-width: 22px; line-height: 1.7; }
+.prob-text { flex: 1; }
+.prob-name { font-size: 12px; font-weight: 600; color: #222; line-height: 1.4; }
+.prob-desc { font-size: 11px; color: #888; line-height: 1.4; margin-top: 1px; }
+.prob-pct  { font-size: 11px; font-weight: 700; min-width: 32px; text-align: right; line-height: 1.7; }
+
+.sol-list { padding: 4px 18px 16px; }
+.sol-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid rgba(0,0,0,.05); }
+.sol-item:last-child { border-bottom: none; }
+.sol-icon { font-size: 13px; line-height: 1.6; min-width: 18px; }
+.sol-text  { flex: 1; }
+.sol-name  { font-size: 12px; font-weight: 600; color: #222; line-height: 1.4; }
+.sol-desc  { font-size: 11px; color: #888; line-height: 1.4; margin-top: 1px; }
+.sol-impact { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 6px; white-space: nowrap; align-self: center; flex-shrink: 0; }
+
+.ov-note { text-align: center; font-size: 12px; color: #aaa; }
+
+/* ────────────────────────────────────────
+   DETAIL PAGES (shared)
+──────────────────────────────────────── */
+.detail-hero { margin-bottom: 24px; }
+.detail-category { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+.detail-title { font-size: 22px; font-weight: 700; color: #222; margin-bottom: 4px; line-height: 1.2; }
+.detail-sub   { font-size: 13px; color: #888; }
+
+.kpi-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 24px; }
+.kpi-card  { background: #fff; border-radius: 10px; padding: 14px 16px; border: 0.5px solid rgba(0,0,0,.08); }
+.kpi-val   { font-size: 26px; font-weight: 700; line-height: 1.1; margin-bottom: 2px; }
+.kpi-lbl   { font-size: 11px; color: #888; line-height: 1.4; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.three-col { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 16px; }
+
+.panel { background: #fff; border-radius: 14px; border: 0.5px solid rgba(0,0,0,.09); padding: 18px 20px; }
+.panel-title { font-size: 13px; font-weight: 600; color: #222; margin-bottom: 14px; }
+
+/* breakdown bars */
+.bar-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid rgba(0,0,0,.05); }
+.bar-row:last-child { border-bottom: none; }
+.bar-label { font-size: 12px; color: #333; flex: 1; }
+.bar-track { width: 90px; flex-shrink: 0; }
+.bar-bg    { background: #f0eeee; border-radius: 3px; height: 6px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 3px; }
+.bar-pct   { font-size: 11px; font-weight: 600; width: 32px; text-align: right; flex-shrink: 0; }
+.bar-count { font-size: 10px; color: #aaa; width: 44px; text-align: right; flex-shrink: 0; }
+
+/* fix cards */
+.fix-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.fix-card  { background: #fff; border-radius: 10px; padding: 14px 16px; border: 0.5px solid rgba(0,0,0,.08); }
+.fix-head  { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.fix-icon  { font-size: 16px; }
+.fix-name  { font-size: 13px; font-weight: 600; color: #222; }
+.fix-body  { font-size: 12px; color: #666; line-height: 1.5; margin-bottom: 8px; }
+.fix-tag   { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 6px; display: inline-block; }
+
+/* insight card */
+.insight { border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; }
+.insight-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.insight-body  { font-size: 12px; line-height: 1.7; }
+
+/* Colors */
+.c-purple { color: #534AB7; } .c-teal { color: #1D9E75; } .c-red { color: #A32D2D; }
+.c-amber  { color: #854F0B; } .c-orange{ color: #8B4000; } .c-grey { color: #888; }
+</style>
+<style>
+/* Charts */
+.charts-section{margin:28px 0 0;}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px;}
+.chart-card{background:#fff;border:1px solid #e8e8ea;border-radius:12px;padding:16px 18px;}
+.chart-title{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+.chart-wrap{position:relative;height:190px;}
+/* Ticket table */
+.ticket-section{margin:24px 0 0;}
+.tkt-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #e8e8ea;margin-top:10px;}
+table.tktbl{width:100%;border-collapse:collapse;font-size:12px;}
+table.tktbl thead{background:#f5f5f7;}
+table.tktbl th{padding:10px 13px;text-align:left;font-weight:700;color:#555;border-bottom:1px solid #e8e8ea;white-space:nowrap;}
+table.tktbl td{padding:9px 13px;color:#333;border-bottom:1px solid #f0f0f2;vertical-align:top;line-height:1.4;}
+table.tktbl tr:last-child td{border-bottom:none;}
+table.tktbl tr:hover td{background:#fafafa;}
+.tkt-id{font-family:monospace;font-weight:700;color:#534AB7;white-space:nowrap;}
+.gap-tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#EEEDFE;color:#534AB7;white-space:nowrap;}
+/* Failure accordion */
+.fail-section{margin:28px 0 4px;}
+.fail-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #f5dcdc;}
+.fail-bar-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#A32D2D;}
+details.fail-item{background:#fff;border:1px solid #e8e8ea;border-radius:10px;margin-bottom:8px;overflow:hidden;}
+details.fail-item[open]{border-color:#c8c4ef;}
+summary.fail-sum{display:flex;align-items:center;gap:10px;padding:13px 15px;cursor:pointer;list-style:none;user-select:none;}
+summary.fail-sum::-webkit-details-marker{display:none;}
+.fail-num{background:#534AB7;color:#fff;font-size:10px;font-weight:800;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.fail-sum-title{font-size:13px;font-weight:700;color:#1a1a1a;flex:1;}
+.fail-count{font-size:11px;font-weight:600;color:#888;white-space:nowrap;margin-right:6px;}
+.fail-chev{color:#aaa;font-size:11px;transition:transform .2s;}
+details.fail-item[open] .fail-chev{transform:rotate(90deg);}
+.fail-body{padding:0 15px 14px;}
+.fail-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px;}
+.fail-col h5{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin:0 0 5px;}
+.fail-col p{font-size:12px;color:#444;line-height:1.5;margin:0;}
+.hc-red{color:#A32D2D;}
+.hc-amber{color:#854F0B;}
+.hc-teal{color:#0F6E56;}
+.fix-box{background:#F0EEFF;border:1px solid #bbb8f0;border-radius:8px;padding:10px 13px;}
+.fix-box h6{font-size:10px;font-weight:800;text-transform:uppercase;color:#534AB7;margin:0 0 4px;}
+.fix-box p{font-size:12px;color:#2a2560;line-height:1.5;margin:0;}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── Top Bar ── -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-dot">A</div>
+    <div>
+      <div class="brand-text">Anjali Upgrade</div>
+      <div class="brand-sub">Cityfurnish · AI Gap Analysis</div>
+    </div>
+  </div>
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">📊 Overview</button>
+    <button class="tab-btn" onclick="switchTab('technical',this)">🔧 Technical Issues <span class="tab-count">39 tickets</span></button>
+    <button class="tab-btn" onclick="switchTab('order',this)">📦 Order Status <span class="tab-count">59 tickets</span></button>
+    <button class="tab-btn" onclick="switchTab('product',this)">🛋️ Product Inquiry <span class="tab-count">343 tickets</span></button>
+  </nav>
+</div>
+
+<!-- ════════════════════════════════════════
+     OVERVIEW
+════════════════════════════════════════ -->
+<div id="tab-overview" class="tab-panel active">
+<div class="page-scroll">
+
+  <div class="ov-title">Where Anjali fails — and what fixes it</div>
+  <div class="ov-sub">441 escalation tickets across 3 categories · May 2026 · Cityfurnish</div>
+
+  <div class="stat-strip">
+    <div class="stat-cell"><div class="stat-val c-purple">441</div><div class="stat-lbl">Total tickets analysed</div></div>
+    <div class="stat-cell"><div class="stat-val c-red">100%</div><div class="stat-lbl">Escalated to a human agent</div></div>
+    <div class="stat-cell"><div class="stat-val c-teal">~60%</div><div class="stat-lbl">Could be resolved by AI with right tools</div></div>
+    <div class="stat-cell"><div class="stat-val c-amber">6</div><div class="stat-lbl">API integrations to fix 88% of tickets</div></div>
+  </div>
+
+  <div class="cat-row">
+
+    <!-- Technical Issues -->
+    <div class="cat-card">
+      <div class="cc-head">
+        <div class="cc-label c-orange">🔧 Technical Issues</div>
+        <div class="cc-title">Existing customers reporting problems</div>
+        <div class="cc-meta">39 tickets · Repair, billing, defects</div>
+      </div>
+      <div class="cc-section-title">Top Problems</div>
+      <div class="prob-list">
+        <div class="prob-item">
+          <span class="prob-rank c-orange">#1</span>
+          <div class="prob-text"><div class="prob-name">Can't raise a repair request</div><div class="prob-desc">No Zoho Desk access — can't log or track service tickets</div></div>
+          <span class="prob-pct c-orange">62%</span>
+        </div>
+        <div class="prob-item">
+          <span class="prob-rank c-amber">#2</span>
+          <div class="prob-text"><div class="prob-name">Can't answer billing questions</div><div class="prob-desc">No access to invoices, subscription or payment history</div></div>
+          <span class="prob-pct c-amber">17%</span>
+        </div>
+        <div class="prob-item">
+          <span class="prob-rank c-grey">#3</span>
+          <div class="prob-text"><div class="prob-name">Can't process discount requests</div><div class="prob-desc">No authority or visibility to apply waivers</div></div>
+          <span class="prob-pct c-grey">5%</span>
+        </div>
+      </div>
+      <div class="cc-divider"></div>
+      <div class="cc-section-title">Top Solutions</div>
+      <div class="sol-list">
+        <div class="sol-item"><span class="sol-icon">🎫</span><div class="sol-text"><div class="sol-name">Zoho Desk SR API</div><div class="sol-desc">Raise, check, and update service requests in-chat</div></div><span class="sol-impact" style="background:#FFF0E6;color:#8B4000">Fixes 79%</span></div>
+        <div class="sol-item"><span class="sol-icon">📋</span><div class="sol-text"><div class="sol-name">Odoo Billing API</div><div class="sol-desc">Read-only invoice and subscription access</div></div><span class="sol-impact" style="background:#FAEEDA;color:#854F0B">Fixes 17%</span></div>
+        <div class="sol-item"><span class="sol-icon">🛠️</span><div class="sol-text"><div class="sol-name">Service Portal API</div><div class="sol-desc">Direct portal actions for repair and replace</div></div><span class="sol-impact" style="background:#f0efed;color:#888">Fixes 7%</span></div>
+      </div>
+    </div>
+
+    <!-- Order Status -->
+    <div class="cat-card">
+      <div class="cc-head">
+        <div class="cc-label c-red">📦 Order Status</div>
+        <div class="cc-title">Customers asking where their order is</div>
+        <div class="cc-meta">59 tickets · Delivery, KYC, escalations</div>
+      </div>
+      <div class="cc-section-title">Top Problems</div>
+      <div class="prob-list">
+        <div class="prob-item">
+          <span class="prob-rank c-red">#1</span>
+          <div class="prob-text"><div class="prob-name">No real-time delivery tracking</div><div class="prob-desc">Sees "dispatched" in Odoo — no driver location or live ETA</div></div>
+          <span class="prob-pct c-red">54%</span>
+        </div>
+        <div class="prob-item">
+          <span class="prob-rank c-amber">#2</span>
+          <div class="prob-text"><div class="prob-name">KYC verification stuck</div><div class="prob-desc">Can't see why it's blocked or push it forward</div></div>
+          <span class="prob-pct c-amber">10%</span>
+        </div>
+        <div class="prob-item">
+          <span class="prob-rank c-grey">#3</span>
+          <div class="prob-text"><div class="prob-name">Broken escalation loop</div><div class="prob-desc">Promises callbacks — no system to ensure they happen</div></div>
+          <span class="prob-pct c-grey">7%</span>
+        </div>
+      </div>
+      <div class="cc-divider"></div>
+      <div class="cc-section-title">Top Solutions</div>
+      <div class="sol-list">
+        <div class="sol-item"><span class="sol-icon">🗺️</span><div class="sol-text"><div class="sol-name">Real-time Logistics API</div><div class="sol-desc">Live status, driver contact, and actual ETA in chat</div></div><span class="sol-impact" style="background:#FCEBEB;color:#A32D2D">Fixes 71%</span></div>
+        <div class="sol-item"><span class="sol-icon">🔍</span><div class="sol-text"><div class="sol-name">KYC Status API</div><div class="sol-desc">See the blocking reason and clearance timeline</div></div><span class="sol-impact" style="background:#FAEEDA;color:#854F0B">Fixes 10%</span></div>
+        <div class="sol-item"><span class="sol-icon">🚚</span><div class="sol-text"><div class="sol-name">Priority Dispatch API</div><div class="sol-desc">Trigger urgent delivery or schedule callback in one action</div></div><span class="sol-impact" style="background:#f0efed;color:#888">Fixes 5%</span></div>
+      </div>
+    </div>
+
+    <!-- Product Inquiry -->
+    <div class="cat-card">
+      <div class="cc-head">
+        <div class="cc-label c-teal">🛋️ Product Inquiry</div>
+        <div class="cc-title">Customers asking before they rent</div>
+        <div class="cc-meta">343 tickets · Pre-sales, pricing, availability</div>
+      </div>
+      <div class="cc-section-title">Top Problems</div>
+      <div class="prob-list">
+        <div class="prob-item">
+          <span class="prob-rank c-purple">#1</span>
+          <div class="prob-text"><div class="prob-name">Can't complete the order in chat</div><div class="prob-desc">Interested customers sent to sales — Anjali can't create a cart</div></div>
+          <span class="prob-pct c-purple">49%</span>
+        </div>
+        <div class="prob-item">
+          <span class="prob-rank c-amber">#2</span>
+          <div class="prob-text"><div class="prob-name">Policy confusion</div><div class="prob-desc">Can't explain 3-month minimum, upfront costs, deposit rules</div></div>
+          <span class="prob-pct c-amber">16%</span>
+        </div>
+        <div class="prob-item">
+          <span class="prob-rank c-teal">#3</span>
+          <div class="prob-text"><div class="prob-name">Can't check stock</div><div class="prob-desc">No live inventory — can't confirm availability or notify when back</div></div>
+          <span class="prob-pct c-teal">10%</span>
+        </div>
+      </div>
+      <div class="cc-divider"></div>
+      <div class="cc-section-title">Top Solutions</div>
+      <div class="sol-list">
+        <div class="sol-item"><span class="sol-icon">🛒</span><div class="sol-text"><div class="sol-name">Cart Creation API</div><div class="sol-desc">Builds cart and sends checkout link — no sales handoff needed</div></div><span class="sol-impact" style="background:#EEEDFE;color:#534AB7">Fixes 49%</span></div>
+        <div class="sol-item"><span class="sol-icon">📖</span><div class="sol-text"><div class="sol-name">Policy Knowledge Base</div><div class="sol-desc">Queryable rules for all rental terms and city policies</div></div><span class="sol-impact" style="background:#FAEEDA;color:#854F0B">Fixes 16%</span></div>
+        <div class="sol-item"><span class="sol-icon">📦</span><div class="sol-text"><div class="sol-name">Inventory API</div><div class="sol-desc">Live stock, back-in-stock ETA, waitlist trigger</div></div><span class="sol-impact" style="background:#E1F5EE;color:#0F6E56">Fixes 10%</span></div>
+      </div>
+    </div>
+
+  </div>
+  <div class="ov-note">Click a tab above to see the full breakdown for each category</div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════
+     TECHNICAL ISSUES
+════════════════════════════════════════ -->
+<div id="tab-technical" class="tab-panel">
+<div class="page-scroll">
+
+  <div class="detail-hero">
+    <div class="detail-category c-orange">🔧 Technical Issues</div>
+    <div class="detail-title">Existing customers reporting problems Anjali can't resolve</div>
+    <div class="detail-sub">39 tickets · Last 30 days · Repair requests, billing disputes, product defects</div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-val c-orange">39</div><div class="kpi-lbl">Tickets analysed</div></div>
+    <div class="kpi-card"><div class="kpi-val c-red">79%</div><div class="kpi-lbl">Blocked by no SR access in Zoho Desk</div></div>
+    <div class="kpi-card"><div class="kpi-val c-amber">53%</div><div class="kpi-lbl">Could be AI-resolved with right tools</div></div>
+    <div class="kpi-card"><div class="kpi-val c-teal">3</div><div class="kpi-lbl">API integrations to fix 96% of tickets</div></div>
+  </div>
+
+  <div class="insight" style="background:#FFF5F0;border:0.5px solid #e8c9b8;">
+    <div class="insight-title c-orange">Root cause</div>
+    <div class="insight-body" style="color:#5a3010;">When an existing customer reports a broken chair or a billing dispute, Anjali's only move is to say <em>"our team will reach out."</em> She has no access to Zoho Desk — can't log a service request, can't check if one already exists, can't update it. The customer walks away with a promise. The SR may or may not get raised by a human later. One API integration closes 79% of all tickets in this category.</div>
+  </div>
+
+  <div class="two-col" style="margin-bottom:16px;">
+
+    <div class="panel">
+      <div class="panel-title">Issue Breakdown</div>
+      <div class="bar-row">
+        <div class="bar-label">Product issue / defect</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:49%;background:#8B4000"></div></div></div>
+        <span class="bar-pct c-orange">49%</span><span class="bar-count">19 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Repair / replacement request</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:13%;background:#8B4000"></div></div></div>
+        <span class="bar-pct c-orange">13%</span><span class="bar-count">5 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Billing dispute</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:8%;background:#854F0B"></div></div></div>
+        <span class="bar-pct c-amber">8%</span><span class="bar-count">3 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Delivery delay (complaint)</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:8%;background:#A32D2D"></div></div></div>
+        <span class="bar-pct c-red">8%</span><span class="bar-count">3 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Discount request</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:5%;background:#854F0B"></div></div></div>
+        <span class="bar-pct c-amber">5%</span><span class="bar-count">2 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Other</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:18%;background:#aaa"></div></div></div>
+        <span class="bar-pct c-grey">18%</span><span class="bar-count">7 tickets</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">What Anjali does today vs. what she should do</div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#A32D2D">Today:</strong> "Our team will reach out soon" — no SR raised, no tracking</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#1D9E75">With SR API:</strong> Logs SR instantly, gives customer the ticket number, tracks ETA</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#A32D2D">Today:</strong> "I'll have accounts check your invoice" — customer waits days</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#1D9E75">With Billing API:</strong> Reads invoice in real-time, clarifies charge or flags dispute</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#A32D2D">Today:</strong> "I'm not authorised to offer discounts" — lead ends cold</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#1D9E75">With policy config:</strong> Applies pre-approved waiver tiers or escalates with context</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-label">Recommended fixes</div>
+  <div class="fix-grid">
+    <div class="fix-card">
+      <div class="fix-head"><span class="fix-icon">🎫</span><span class="fix-name">Zoho Desk SR API</span></div>
+      <div class="fix-body">Anjali raises service requests herself — repair, replacement, or follow-up — and can check status and ETA without involving a human agent.</div>
+      <span class="fix-tag" style="background:#FFF0E6;color:#8B4000">Fixes 79% of tickets</span>
+    </div>
+    <div class="fix-card">
+      <div class="fix-head"><span class="fix-icon">📋</span><span class="fix-name">Odoo Billing API</span></div>
+      <div class="fix-body">Read-only access to subscription plans, invoice history, and payment status. Anjali can answer "why was I charged X?" without escalating to accounts.</div>
+      <span class="fix-tag" style="background:#FAEEDA;color:#854F0B">Fixes 17% of tickets</span>
+    </div>
+    <div class="fix-card">
+      <div class="fix-head"><span class="fix-icon">🛠️</span><span class="fix-name">Service Portal API</span></div>
+      <div class="fix-body">Direct integration with the repair and replacement workflow — Anjali can initiate a technician visit or replacement order without a human middleman.</div>
+      <span class="fix-tag" style="background:#f0efed;color:#888">Fixes 7% of tickets</span>
+    </div>
+  </div>
+  <!-- ── TI Charts ── -->
+  <div class="charts-section">
+    <div class="sec-label" style="margin-top:0;">Performance Charts</div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Issue Type Breakdown</div><div class="chart-wrap"><canvas id="ti-iss"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Customer Sentiment at Escalation</div><div class="chart-wrap"><canvas id="ti-sent"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">What Agents Actually Did</div><div class="chart-wrap"><canvas id="ti-agent"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Human Resolution Outcomes</div><div class="chart-wrap"><canvas id="ti-res"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- ── TI Ticket Table ── -->
+  <div class="ticket-section">
+    <div class="sec-label" style="margin-top:0;">Sample Ticket References</div>
+    <div class="tkt-table-wrap">
+      <table class="tktbl">
+        <thead><tr><th>Ticket</th><th>Issue</th><th>Anjali's Gap</th><th>Human Action</th></tr></thead>
+        <tbody>
+          <tr><td class="tkt-id">#16106</td><td>Wanted SR raised — no SR number provided</td><td><span class="gap-tag">No SR creation</span></td><td>Agent manually raised SR in Zoho Desk</td></tr>
+          <tr><td class="tkt-id">#42001</td><td>Product issue — recharge plan dispute</td><td><span class="gap-tag">No billing access</span></td><td>Checked Odoo invoices, resolved plan discrepancy</td></tr>
+          <tr><td class="tkt-id">#39071</td><td>Product issue — logistics ETA needed</td><td><span class="gap-tag">No logistics API</span></td><td>Opened logistics dashboard, gave real ETA</td></tr>
+          <tr><td class="tkt-id">#42612</td><td>Billing dispute — coupon not applied</td><td><span class="gap-tag">No billing access</span></td><td>Verified coupon in Odoo, applied manually</td></tr>
+          <tr><td class="tkt-id">#34650</td><td>Repair request — no action taken by Anjali</td><td><span class="gap-tag">No SR creation</span></td><td>Raised repair SR, scheduled technician visit</td></tr>
+          <tr><td class="tkt-id">#41234</td><td>Repair — technician ETA unknown</td><td><span class="gap-tag">No logistics API</span></td><td>Checked field schedule, confirmed slot to customer</td></tr>
+          <tr><td class="tkt-id">#40223</td><td>Billing — can't see invoice or current plan</td><td><span class="gap-tag">No billing access</span></td><td>Pulled invoice from Odoo, shared breakdown</td></tr>
+          <tr><td class="tkt-id">#4431</td><td>Delivery delay — ETA window unknown</td><td><span class="gap-tag">No logistics API</span></td><td>Tracked delivery, gave updated time window</td></tr>
+          <tr><td class="tkt-id">#41280</td><td>Product issue — SR expected, none raised</td><td><span class="gap-tag">No SR creation</span></td><td>Created SR in Zoho, updated customer</td></tr>
+          <tr><td class="tkt-id">#35494</td><td>Repair — technician not assigned</td><td><span class="gap-tag">No scheduling API</span></td><td>Manually assigned technician appointment slot</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── TI WHY AI FAILED ── -->
+  <div class="fail-section">
+    <div class="fail-bar"><span class="fail-bar-label">&#9889; Why Anjali Failed &mdash; Every Unique Reason, Fully Explained</span></div>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">1</span><span class="fail-sum-title">No Service Request access &mdash; couldn't create, read, or update SRs</span><span class="fail-count">9 tickets &middot; 23%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>To have a service request logged for a product issue, repair, or complaint &mdash; and get an SR number to track progress.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>Zero read/write access to Zoho Desk. She could not open a ticket, look up an existing one, or confirm if an SR had been raised.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Manually opened Zoho Desk, raised the SR, shared the number with the customer &mdash; work that should be fully automated.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Zoho Desk API: <strong>POST /tickets</strong> (create SR), <strong>GET /tickets/{id}</strong> (read status), <strong>PATCH /tickets/{id}</strong> (update). Anjali logs every complaint as an SR automatically and shares the number in-chat.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">2</span><span class="fail-sum-title">No real-time logistics access &mdash; delivery / technician ETA unknown</span><span class="fail-count">13 tickets &middot; 33%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>A specific delivery or technician arrival window &mdash; not a generic promise that "someone will reach out."</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>No access to the logistics or field service platform. She defaulted to vague assurances &mdash; the exact thing the customer was already frustrated about.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Opened the logistics dashboard, found the actual ETA or technician assignment, and gave the customer a real time window.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Logistics Tracking API: <strong>GET /delivery/status?order={id}</strong> and <strong>GET /technician/eta?sr={id}</strong>. Anjali pulls live status on demand and gives a real window &mdash; no human required.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">3</span><span class="fail-sum-title">No billing access &mdash; couldn't see invoices, plans, or validate coupons</span><span class="fail-count">9 tickets &middot; 23%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>To understand a charge, confirm their current plan, or know why a discount code wasn't applied.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>No read access to Odoo billing. She couldn't pull invoices, check plan details, or validate coupon codes.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Logged into Odoo, found the customer's invoice, validated the coupon or plan, and resolved the discrepancy.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Odoo Billing API: <strong>GET /invoices?customer={id}</strong>, <strong>GET /plans/{id}</strong>, <strong>GET /coupons/validate?code={code}</strong>. Anjali pulls and explains any charge in real time.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">4</span><span class="fail-sum-title">No Odoo account access &mdash; couldn't see subscription items or address</span><span class="fail-count">5 tickets &middot; 12%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>To confirm or update their rented items list, delivery address, or subscription details.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>No access to Odoo account/subscription data. She could verify identity but had no view of what the customer was renting or what was on file.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Pulled the customer's Odoo profile, checked the active sale order and subscription, answered or updated accordingly.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Odoo Account API: <strong>GET /customers/{id}</strong>, <strong>GET /sale-orders?customer={id}</strong>, <strong>GET /subscriptions/{id}</strong>. Full read access to any active customer's account at query time.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">5</span><span class="fail-sum-title">No scheduling access &mdash; couldn't check or change appointment slots</span><span class="fail-count">1 ticket &middot; 2%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>To reschedule a repair or delivery appointment to a different date or time window.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>No scheduling system access. Acknowledged the request and escalated &mdash; customer still had to wait for a callback.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Checked the scheduling tool, confirmed available slots, rescheduled the appointment manually.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Scheduling API: <strong>GET /slots?date={date}&amp;city={city}</strong> (availability), <strong>PATCH /appointments/{id}</strong> (reschedule). A self-serve action that requires zero human involvement.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">6</span><span class="fail-sum-title">No approval authority &mdash; couldn't grant discounts or waivers</span><span class="fail-count">1 ticket &middot; 2%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>A small discount or charge waiver to resolve a billing complaint &mdash; a goodwill gesture that retains subscribers.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>No decision ruleset for exceptions. Every waiver, however small, required a human to assess and approve.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Reviewed the account, decided the discount was warranted, applied it in Odoo, confirmed with the customer.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Config-based decision ruleset: auto-approve waivers &le;&#8377;500 for subscriptions older than 6 months; flag anything larger for human review. Anjali acts within pre-approved guardrails without escalating every case.</p></div>
+      </div>
+    </details>
+  </div>
+
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════
+     ORDER STATUS
+════════════════════════════════════════ -->
+<div id="tab-order" class="tab-panel">
+<div class="page-scroll">
+
+  <div class="detail-hero">
+    <div class="detail-category c-red">📦 Order Status</div>
+    <div class="detail-title">Customers asking where their order is — Anjali can't tell them</div>
+    <div class="detail-sub">59 tickets · Last 30 days · Delivery tracking, KYC, escalations</div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-val c-red">59</div><div class="kpi-lbl">Tickets analysed</div></div>
+    <div class="kpi-card"><div class="kpi-val c-red">54%</div><div class="kpi-lbl">Delivery delays — Anjali sees "dispatched" only</div></div>
+    <div class="kpi-card"><div class="kpi-val c-amber">71%</div><div class="kpi-lbl">Fixed by one logistics API integration</div></div>
+    <div class="kpi-card"><div class="kpi-val c-teal">2</div><div class="kpi-lbl">APIs to resolve 81% of all OS tickets</div></div>
+  </div>
+
+  <div class="insight" style="background:#FEF0F0;border:0.5px solid #e8b8b8;">
+    <div class="insight-title c-red">Root cause</div>
+    <div class="insight-body" style="color:#5a1010;">Anjali can look up an order in Odoo. She can see it's "dispatched." That's all. The real delivery system — driver location, actual ETA, field agent contact — lives elsewhere and she has no bridge to it. Every single Order Status ticket ends with the same line: <em>"I've raised an escalation, our team will reach you soon."</em> One API bridge closes over half of all tickets in this category overnight.</div>
+  </div>
+
+  <div class="two-col" style="margin-bottom:16px;">
+
+    <div class="panel">
+      <div class="panel-title">Issue Breakdown</div>
+      <div class="bar-row">
+        <div class="bar-label">Delivery delayed — no live update</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:54%;background:#E24B4A"></div></div></div>
+        <span class="bar-pct c-red">54%</span><span class="bar-count">32 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Status check — where is my order?</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:17%;background:#534AB7"></div></div></div>
+        <span class="bar-pct c-purple">17%</span><span class="bar-count">10 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">KYC stuck — verification blocked</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:10%;background:#854F0B"></div></div></div>
+        <span class="bar-pct c-amber">10%</span><span class="bar-count">6 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Broken callback — promise not kept</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:7%;background:#854F0B"></div></div></div>
+        <span class="bar-pct c-amber">7%</span><span class="bar-count">4 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Urgent / same-day delivery needed</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:5%;background:#1D9E75"></div></div></div>
+        <span class="bar-pct c-teal">5%</span><span class="bar-count">3 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Reschedule, discrepancy, contact</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:7%;background:#aaa"></div></div></div>
+        <span class="bar-pct c-grey">7%</span><span class="bar-count">4 tickets</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">What Anjali does today vs. what she should do</div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#A32D2D">Today:</strong> Checks Odoo — sees "dispatched" — can't add anything useful</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#1D9E75">With Logistics API:</strong> Shows live driver location, ETA, and field agent number in chat</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#A32D2D">Today:</strong> "KYC usually takes 24 hours" — no idea why it's stuck</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#1D9E75">With KYC API:</strong> Reads blocking reason (doc mismatch, address issue) and gives real timeline</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#A32D2D">Today:</strong> Escalates and hopes a human follows up — often they don't</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#1D9E75">With Dispatch API:</strong> Triggers priority delivery or schedules a confirmed callback slot</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-label">Recommended fixes</div>
+  <div class="fix-grid">
+    <div class="fix-card">
+      <div class="fix-head"><span class="fix-icon">🗺️</span><span class="fix-name">Real-time Logistics API</span></div>
+      <div class="fix-body">Pulls live delivery status, driver location, field agent name, and actual ETA from the dispatch system. Anjali can answer "where is my order?" with real information, not a guess.</div>
+      <span class="fix-tag" style="background:#FCEBEB;color:#A32D2D">Fixes 71% of tickets</span>
+    </div>
+    <div class="fix-card">
+      <div class="fix-head"><span class="fix-icon">🔍</span><span class="fix-name">KYC Status API</span></div>
+      <div class="fix-body">Shows Anjali the exact verification step, blocking reason (document issue, address mismatch), and SLA. Enables a real answer instead of "it usually takes 24 hours."</div>
+      <span class="fix-tag" style="background:#FAEEDA;color:#854F0B">Fixes 10% of tickets</span>
+    </div>
+    <div class="fix-card">
+      <div class="fix-head"><span class="fix-icon">🚚</span><span class="fix-name">Priority Dispatch API</span></div>
+      <div class="fix-body">Lets Anjali trigger urgent delivery for same-day requests or schedule a guaranteed callback slot — instead of raising a vague escalation that may never be followed up.</div>
+      <span class="fix-tag" style="background:#f0efed;color:#888">Fixes 5% of tickets</span>
+    </div>
+  </div>
+  <!-- ── OS Charts ── -->
+  <div class="charts-section">
+    <div class="sec-label" style="margin-top:0;">Performance Charts</div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Issue Type Breakdown</div><div class="chart-wrap"><canvas id="os-iss"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Customer Sentiment at Escalation</div><div class="chart-wrap"><canvas id="os-sent"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">What Agents Actually Did</div><div class="chart-wrap"><canvas id="os-agent"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Human Resolution Outcomes</div><div class="chart-wrap"><canvas id="os-res"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- ── OS Ticket Table ── -->
+  <div class="ticket-section">
+    <div class="sec-label" style="margin-top:0;">Sample Ticket References</div>
+    <div class="tkt-table-wrap">
+      <table class="tktbl">
+        <thead><tr><th>Ticket</th><th>Issue</th><th>Anjali's Gap</th><th>Human Action</th></tr></thead>
+        <tbody>
+          <tr><td class="tkt-id">#43311</td><td>Delivery driver contact needed urgently</td><td><span class="gap-tag">No logistics API</span></td><td>Agent called logistics team, shared driver number</td></tr>
+          <tr><td class="tkt-id">#43378</td><td>Fridge delivery delayed — no update</td><td><span class="gap-tag">No logistics API</span></td><td>Tracked delivery, confirmed new slot to customer</td></tr>
+          <tr><td class="tkt-id">#43644</td><td>Callback promised but never came</td><td><span class="gap-tag">No escalation tracker</span></td><td>Checked escalation log, arranged callback manually</td></tr>
+          <tr><td class="tkt-id">#41741</td><td>Delivery window missed, customer waiting</td><td><span class="gap-tag">No logistics API</span></td><td>Raised priority escalation to logistics team</td></tr>
+          <tr><td class="tkt-id">#41001</td><td>Fridge delayed for second time</td><td><span class="gap-tag">No logistics API</span></td><td>Escalated to operations, rescheduled for next day</td></tr>
+          <tr><td class="tkt-id">#38583</td><td>KYC blocking delivery of fridge</td><td><span class="gap-tag">No KYC status API</span></td><td>Checked KYC system, found blocking reason, resolved</td></tr>
+          <tr><td class="tkt-id">#37988</td><td>KYC under review for 24+ hours</td><td><span class="gap-tag">No KYC status API</span></td><td>Found pending doc issue, escalated to verification team</td></tr>
+          <tr><td class="tkt-id">#36233</td><td>Delivery window "first half of day" — no update</td><td><span class="gap-tag">No logistics API</span></td><td>Gave live delivery status, confirmed 11AM window</td></tr>
+          <tr><td class="tkt-id">#31235</td><td>Urgent same-day TV delivery needed in Gurgaon</td><td><span class="gap-tag">No priority dispatch API</span></td><td>Checked availability, confirmed priority slot</td></tr>
+          <tr><td class="tkt-id">#25123</td><td>Marked "scheduled" in system, item not received</td><td><span class="gap-tag">No logistics API</span></td><td>Investigated mismatch, rescheduled delivery</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── OS WHY AI FAILED ── -->
+  <div class="fail-section">
+    <div class="fail-bar"><span class="fail-bar-label">&#9889; Why Anjali Failed &mdash; Every Unique Reason, Fully Explained</span></div>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">1</span><span class="fail-sum-title">No real-time logistics visibility &mdash; couldn't see delivery status</span><span class="fail-count">32 tickets &middot; 54%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>To know where their delivery was, when it would arrive, or why it hadn't come yet &mdash; a live status, not a guess.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>She could see "dispatched" in the order system but had no access to the live logistics feed. She raised a generic escalation and promised a callback, which often never came.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Opened the logistics platform, found the driver's live status or delay reason, gave the customer an actual updated ETA or rescheduled the slot.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Real-time Logistics API: <strong>GET /delivery/status?order={id}</strong> returns current driver position, delay reason, and ETA. Anjali resolves 54% of Order Status tickets without human intervention.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">2</span><span class="fail-sum-title">No scheduled delivery status &mdash; couldn't confirm today's window</span><span class="fail-count">10 tickets &middot; 17%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>To confirm whether today's scheduled delivery was still on track &mdash; a simple ETA check before waiting home all day.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>Same gap as above: the order was marked "scheduled" but Anjali couldn't pull real-time dispatch status to confirm the window.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Checked dispatch status, confirmed the driver was en-route or updated the customer if the slot had slipped.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Same Logistics API: <strong>GET /delivery/schedule?order={id}&amp;date=today</strong> returns dispatch confirmation and time-window. Covered by the same integration as failure #1.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">3</span><span class="fail-sum-title">No KYC status access &mdash; couldn't see blocking reason or progress</span><span class="fail-count">6 tickets &middot; 10%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>To know why their KYC was stuck, what was missing, and when it would be cleared so delivery could proceed.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>She knew KYC was "in review" but had no API access to see the blocking reason, missing documents, or SLA status. She gave the generic "usually 24 hours" answer, which was wrong in every case here.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Logged into the KYC system, found the specific blocking item (expired ID, missing selfie, etc.), escalated to the verification team with the exact gap identified.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>KYC Status API: <strong>GET /kyc/{customer_id}/status</strong> returns current stage, blocking reason, and SLA timestamp. Anjali gives an accurate answer and escalates to verification only when genuinely blocked.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">4</span><span class="fail-sum-title">No escalation tracker &mdash; couldn't see or honour previous callbacks</span><span class="fail-count">4 tickets &middot; 7%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>The callback they were already promised 1&ndash;2 days ago to actually happen &mdash; or a real status on why it didn't.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>No escalation tracker meant every conversation started from scratch. Anjali had no record of prior callbacks promised, who owned the case, or whether any action had been taken.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Manually searched previous ticket notes, identified the broken callback chain, and arranged a fresh callback with a specific agent assigned.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Escalation Tracker: <strong>GET /escalations?customer={id}</strong> shows open items, owner, and SLA status. <strong>POST /escalations</strong> creates a tracked item with an owner assigned. No more lost callbacks.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">5</span><span class="fail-sum-title">No priority dispatch &mdash; couldn't confirm or trigger same-day delivery</span><span class="fail-count">3 tickets &middot; 5%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>A confirmed same-day or urgent delivery slot &mdash; not a vague escalation that might or might not be acted on.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>No access to priority slots or dispatch scheduling. She raised a generic escalation tagged "urgent" with no guarantee it would be treated as such by the logistics team.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Called the logistics team directly, confirmed slot availability, flagged the order as priority, and gave the customer a confirmed same-day window.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Priority Dispatch API: <strong>GET /dispatch/priority-slots?city={city}&amp;date=today</strong> checks availability; <strong>POST /orders/{id}/priority-flag</strong> escalates with a real SLA trigger &mdash; not just a tag in a comment.</p></div>
+      </div>
+    </details>
+  </div>
+
+
+</div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PRODUCT INQUIRY
+════════════════════════════════════════ -->
+<div id="tab-product" class="tab-panel">
+<div class="page-scroll">
+
+  <div class="detail-hero">
+    <div class="detail-category c-teal">🛋️ Product Inquiry</div>
+    <div class="detail-title">Customers ready to rent — but Anjali can't close the deal</div>
+    <div class="detail-sub">343 tickets · Last 30 days · Pre-sales, pricing, availability, policies</div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-val c-purple">343</div><div class="kpi-lbl">Tickets analysed</div></div>
+    <div class="kpi-card"><div class="kpi-val c-red">49%</div><div class="kpi-lbl">Lost to sales handoff — no cart creation in chat</div></div>
+    <div class="kpi-card"><div class="kpi-val c-teal">64%</div><div class="kpi-lbl">AI-solvable with cart + policy + inventory APIs</div></div>
+    <div class="kpi-card"><div class="kpi-val c-amber">4</div><div class="kpi-lbl">Integrations to close 75% of PI tickets</div></div>
+  </div>
+
+  <div class="insight" style="background:#F0EEFF;border:0.5px solid #bbb8f0;">
+    <div class="insight-title c-purple">Root cause</div>
+    <div class="insight-body" style="color:#2a2560;">Half of all Product Inquiry tickets share a single failure: the customer is qualified, interested, and ready to rent — but Anjali cannot complete the order inside the chat. She has to say <em>"let me connect you with our sales team"</em> and the lead exits the conversation. Every warm lead is a cold handoff. Build one API that lets Anjali create a cart and send a checkout link, and 49% of this entire category resolves itself.</div>
+  </div>
+
+  <div class="two-col" style="margin-bottom:16px;">
+
+    <div class="panel">
+      <div class="panel-title">Issue Breakdown</div>
+      <div class="bar-row">
+        <div class="bar-label">Can't complete order in chat</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:49%;background:#534AB7"></div></div></div>
+        <span class="bar-pct c-purple">49%</span><span class="bar-count">168 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Policy confusion</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:16%;background:#854F0B"></div></div></div>
+        <span class="bar-pct c-amber">16%</span><span class="bar-count">55 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Stock unavailability</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:10%;background:#1D9E75"></div></div></div>
+        <span class="bar-pct c-teal">10%</span><span class="bar-count">34 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Coupon code not applying</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:8%;background:#854F0B"></div></div></div>
+        <span class="bar-pct c-amber">8%</span><span class="bar-count">28 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Delivery timeline / serviceability</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:5%;background:#1D9E75"></div></div></div>
+        <span class="bar-pct c-teal">5%</span><span class="bar-count">16 tickets</span>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Product spec gaps / other</div>
+        <div class="bar-track"><div class="bar-bg"><div class="bar-fill" style="width:12%;background:#aaa"></div></div></div>
+        <span class="bar-pct c-grey">12%</span><span class="bar-count">42 tickets</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">What Anjali does today vs. what she should do</div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#A32D2D">Today:</strong> "Let me connect you with sales to complete your order"</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#1D9E75">With Cart API:</strong> Builds the cart, sends a checkout link — sale happens in-chat</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#A32D2D">Today:</strong> Gives approximate or wrong policy info — customer confused</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#1D9E75">With Policy KB:</strong> Accurate, city-specific policy instantly — 3-month min, deposits, AC terms</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#A32D2D">Today:</strong> "That item may be out of stock, I'll check" — no resolution</div>
+      </div>
+      <div class="bar-row" style="padding:9px 0;">
+        <div class="bar-label" style="font-size:11px;"><strong style="color:#1D9E75">With Inventory API:</strong> Confirms availability, offers alternatives, notifies when back</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-label">Recommended fixes</div>
+  <div class="fix-grid">
+    <div class="fix-card">
+      <div class="fix-head"><span class="fix-icon">🛒</span><span class="fix-name">Cart Creation API</span></div>
+      <div class="fix-body">Anjali builds the cart and sends a payment-ready checkout link inside the chat. Removes the dependency on sales for every purchase intent — the biggest single fix across all categories.</div>
+      <span class="fix-tag" style="background:#EEEDFE;color:#534AB7">Fixes 49% of tickets</span>
+    </div>
+    <div class="fix-card">
+      <div class="fix-head"><span class="fix-icon">📖</span><span class="fix-name">Policy Knowledge Base</span></div>
+      <div class="fix-body">Structured, queryable rules for all rental policies — minimum tenure, upfront payment, AC norms, city-specific terms, cancellation, and refunds. No more approximate answers.</div>
+      <span class="fix-tag" style="background:#FAEEDA;color:#854F0B">Fixes 16% of tickets</span>
+    </div>
+    <div class="fix-card">
+      <div class="fix-head"><span class="fix-icon">📦</span><span class="fix-name">Inventory API</span></div>
+      <div class="fix-body">Live stock status, back-in-stock ETA, and optional waitlist or notification trigger. Eliminates the 10% of tickets where customers ask about unavailable items and get no useful answer.</div>
+      <span class="fix-tag" style="background:#E1F5EE;color:#0F6E56">Fixes 10% of tickets</span>
+    </div>
+  </div>
+  <!-- ── PI Charts ── -->
+  <div class="charts-section">
+    <div class="sec-label" style="margin-top:0;">Performance Charts</div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Issue Type Breakdown</div><div class="chart-wrap"><canvas id="pi-iss"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Customer Sentiment at Escalation</div><div class="chart-wrap"><canvas id="pi-sent"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">What Agents Actually Did</div><div class="chart-wrap"><canvas id="pi-agent"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Human Resolution Outcomes</div><div class="chart-wrap"><canvas id="pi-res"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- ── PI Ticket Table ── -->
+  <div class="ticket-section">
+    <div class="sec-label" style="margin-top:0;">Sample Ticket References</div>
+    <div class="tkt-table-wrap">
+      <table class="tktbl">
+        <thead><tr><th>Ticket</th><th>Issue</th><th>Anjali's Gap</th><th>Human Action</th></tr></thead>
+        <tbody>
+          <tr><td class="tkt-id">#43655</td><td>TV remote / OTT setup + 11-month policy confusion</td><td><span class="gap-tag">Policy knowledge gap</span></td><td>Explained policy, created order manually</td></tr>
+          <tr><td class="tkt-id">#43735</td><td>Monthly AC plan inquiry — upfront payment required</td><td><span class="gap-tag">No cart creation</span></td><td>Explained terms, set up monthly plan in Odoo</td></tr>
+          <tr><td class="tkt-id">#43939</td><td>1BHK combo Jaipur — beige sofa availability</td><td><span class="gap-tag">No inventory API</span></td><td>Checked stock, confirmed availability, created cart</td></tr>
+          <tr><td class="tkt-id">#43870</td><td>TV + washing machine buyout interest</td><td><span class="gap-tag">No cart creation</span></td><td>Checked buyout value, initiated order</td></tr>
+          <tr><td class="tkt-id">#43642</td><td>Pune furniture enquiry — requested callback</td><td><span class="gap-tag">No cart creation</span></td><td>Sales called back, built quote, created order</td></tr>
+          <tr><td class="tkt-id">#43635</td><td>Cheaper mattress SKU in Mumbai</td><td><span class="gap-tag">No inventory API</span></td><td>Found alternative SKU, created cart</td></tr>
+          <tr><td class="tkt-id">#43537</td><td>Washing machine maintenance schedule</td><td><span class="gap-tag">Policy knowledge gap</span></td><td>Shared maintenance policy, scheduled technician</td></tr>
+          <tr><td class="tkt-id">#43500</td><td>1.5T AC Hyderabad — tenure policy query</td><td><span class="gap-tag">Policy knowledge gap</span></td><td>Explained minimum tenure + deposit rules</td></tr>
+          <tr><td class="tkt-id">#42997</td><td>Monthly fridge + washing machine not available</td><td><span class="gap-tag">No inventory API</span></td><td>Checked availability, offered waitlist</td></tr>
+          <tr><td class="tkt-id">#42790</td><td>TDS water purifier spec clarification</td><td><span class="gap-tag">Policy knowledge gap</span></td><td>Shared spec sheet, created cart</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PI WHY AI FAILED ── -->
+  <div class="fail-section">
+    <div class="fail-bar"><span class="fail-bar-label">&#9889; Why Anjali Failed &mdash; Every Unique Reason, Fully Explained</span></div>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">1</span><span class="fail-sum-title">No cart creation in chat &mdash; 168 warm leads handed off to sales</span><span class="fail-count">168 tickets &middot; 49%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>To complete their rental order inside the chat &mdash; they had already confirmed the product, city, and plan. They just needed someone to take the order.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>No API access to create a cart, add items, or generate a checkout link. Every purchase-ready conversation ended with: "Let me connect you with our sales team" &mdash; breaking the conversion.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Sales agent called back, rebuilt the conversation, created the order in Odoo manually. Many leads went cold before the callback happened.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Cart Creation API: <strong>POST /cart/create</strong>, <strong>POST /cart/{id}/items</strong>, <strong>GET /cart/{id}/checkout-url</strong>. Anjali builds the cart in-chat and sends a payment-ready link. 49% of this category closes without a human.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">2</span><span class="fail-sum-title">No inventory visibility &mdash; couldn't confirm stock or offer alternatives</span><span class="fail-count">34 tickets &middot; 10%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>To know if the specific product was available in their city &mdash; and if not, what the best alternative was or when it would be back.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>No access to live inventory. She would say "that item may be out of stock, I'll check" and then escalate &mdash; delivering the same dead-end the customer was trying to avoid.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Checked the inventory system, confirmed availability or found an alternative SKU in the same city, and created the cart with the alternative.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Inventory API: <strong>GET /products/{id}/availability?city={city}</strong> (stock + ETA), <strong>GET /products/{id}/alternatives?city={city}</strong> (substitutes). Anjali confirms, offers alternatives, or adds to waitlist &mdash; no escalation needed.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">3</span><span class="fail-sum-title">Policy knowledge gaps &mdash; wrong or missing answers on tenure, deposits, AC rules</span><span class="fail-count">55 tickets &middot; 16%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>Accurate, city-specific policy answers: AC minimum tenure, deposit amounts, cancellation terms, combo eligibility, maintenance schedules.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>Either gave approximate or wrong policy info, or escalated because she wasn't trained on city-specific variations. AC tenure rules, Jaipur deposit norms, and combo eligibility were consistent blind spots.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Looked up the correct policy for the city and product type, explained it accurately, and in most cases then also created the order that should have been created in the same session.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Structured Policy Knowledge Base: queryable rules by city, product category, and tenure. All edge cases (AC norms, deposit rules, combo eligibility) encoded as structured facts &mdash; not embedded in training text that degrades over time.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">4</span><span class="fail-sum-title">Coupon and promo codes not validatable &mdash; customer stuck at checkout</span><span class="fail-count">28 tickets &middot; 8%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>To know whether their coupon code was valid, what discount it offered, and why it wasn't applying during checkout.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>No access to the promo/billing system to validate codes. She couldn't confirm expiry, eligibility conditions, or the discount amount &mdash; so every coupon question became an escalation.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Looked up the coupon in Odoo, confirmed whether it was valid, explained the conditions, and in some cases applied it manually or issued a replacement code.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Billing API: <strong>GET /coupons/validate?code={code}&amp;customer={id}</strong> returns validity, discount type, eligibility conditions. Anjali tells the customer immediately whether the code works and why &mdash; and applies it if the cart is being built in-chat.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">5</span><span class="fail-sum-title">No approval authority &mdash; escalated exceptions that had clear rules</span><span class="fail-count">25 tickets &middot; 7%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>A reasonable exception &mdash; a small discount on a B2B order, a monthly plan for a high-value subscription, or enterprise routing for a bulk inquiry.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>Anjali understood the request correctly but had no ruleset for exceptions. Every discount or routing decision required a human, even when the logic was simple and repeatable.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>Applied a discount, approved a monthly plan, or routed the inquiry to the enterprise sales team &mdash; decisions that follow a clear pattern and could be automated.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Config-based ruleset: auto-approve &le;5% discount on first B2B order above &#8377;5,000/mo; offer monthly plan for &#8377;4,000+/mo subscriptions; route bulk (&ge;10 items) to enterprise sales. Encode the decision &mdash; don't escalate it.</p></div>
+      </div>
+    </details>
+
+    <details class="fail-item">
+      <summary class="fail-sum"><span class="fail-num">6</span><span class="fail-sum-title">Unnecessary escalations &mdash; Anjali escalated, human couldn't resolve either</span><span class="fail-count">24 tickets &middot; 7%</span><span class="fail-chev">&#9654;</span></summary>
+      <div class="fail-body">
+        <div class="fail-3col">
+          <div class="fail-col"><h5 class="hc-red">Customer Needed</h5><p>A resolution &mdash; from anyone. The escalation didn't add value because the human agent also lacked the information or authority to resolve.</p></div>
+          <div class="fail-col"><h5 class="hc-amber">Anjali Couldn't</h5><p>Anjali's confidence threshold was miscalibrated. She escalated cases she could have handled (with the APIs above) and also escalated cases where the right answer was "we'll follow up" &mdash; which a human also couldn't improve on.</p></div>
+          <div class="fail-col"><h5 class="hc-teal">Human Did</h5><p>In many of these cases: nothing more than what Anjali did. The escalation added a wait time but no resolution value.</p></div>
+        </div>
+        <div class="fix-box"><h6>The Fix</h6><p>Two fixes: (1) Give Anjali the APIs above so fewer things genuinely require escalation. (2) Tune confidence thresholds &mdash; Anjali should only escalate when a human can actually do something she cannot. If both would say "we'll follow up," Anjali should say it and close.</p></div>
+      </div>
+    </details>
+  </div>
+
+
+</div>
+</div>
+
+</div><!-- /shell -->
+
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+
+<script>
+(function(){
+  var P='#534AB7',T='#1D9E75',R='#E24B4A',A='#EF9F27',G='#888780',B='#B4B2A9';
+  function hbar(id,labels,data,colors){
+    var ctx=document.getElementById(id);
+    if(!ctx)return;
+    new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[{data:data,backgroundColor:colors||P,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.raw+' tickets';}}}},scales:{x:{grid:{color:'#f0f0f2'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  }
+  function donut(id,labels,data,colors){
+    var ctx=document.getElementById(id);
+    if(!ctx)return;
+    new Chart(ctx,{type:'doughnut',data:{labels:labels,datasets:[{data:data,backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:8,boxWidth:12}}}}});
+  }
+
+  // ── TECHNICAL ISSUES ──
+  hbar('ti-iss',
+    ['Product issue','Repair / replace','Billing dispute','Delivery delay','Discount req.','Other'],
+    [19,5,3,3,2,7],
+    [R,A,A,A,G,G]);
+  donut('ti-sent',
+    ['Angry','Negative','Neutral'],
+    [14,21,4],
+    [R,A,G]);
+  hbar('ti-agent',
+    ['Checked Zoho SR','Updated Zoho SR','Escalated fulfillment','Gave contact no.','Only acknowledged','Escalated accounts'],
+    [30,24,23,17,9,5],
+    [P,P,A,G,R,A]);
+  donut('ti-res',
+    ['Fully resolved','Partially resolved','Unresolved'],
+    [11,21,7],
+    [T,A,R]);
+
+  // ── ORDER STATUS ──
+  hbar('os-iss',
+    ['Delivery Delay','Status Inquiry','KYC Delay','Callback Broken','Urgent Delivery','Reschedule','Discrepancy','Contact Request'],
+    [32,10,6,4,3,2,1,1],
+    [R,A,A,R,A,G,G,G]);
+  donut('os-sent',
+    ['Frustrated','Negative','Neutral'],
+    [31,21,7],
+    [R,A,G]);
+  hbar('os-agent',
+    ['Raised escalation','Checked Odoo','Gave callback promise','Called logistics team','Only acknowledged'],
+    [45,32,28,18,12],
+    [A,P,A,T,R]);
+  donut('os-res',
+    ['Resolved','Partially resolved','Unresolved'],
+    [12,28,19],
+    [T,A,R]);
+
+  // ── PRODUCT INQUIRY ──
+  hbar('pi-iss',
+    ['New inquiry (cart needed)','Policy confusion','Out of stock','Coupon / promo issue','Delivery timeline','Product spec gap','B2B / bulk','Existing customer','Logistics availability'],
+    [168,55,34,28,16,11,11,8,12],
+    [P,A,A,A,P,P,'#1A56DB',G,G]);
+  donut('pi-sent',
+    ['Neutral','Negative','Positive'],
+    [265,57,20],
+    [G,A,T]);
+  hbar('pi-agent',
+    ['Checked Zoho SR','Checked Odoo','Updated Zoho SR','Checked logistics','Escalated to sales','Provided contact no.','Escalated accounts','Escalated fulfillment','Offered callback','Only acknowledged'],
+    [318,227,196,187,167,98,77,75,69,51],
+    [P,P,P,T,A,G,A,A,G,R]);
+  donut('pi-res',
+    ['Fully resolved','Partially resolved','Unresolved','Escalated further'],
+    [184,134,12,12],
+    [T,A,R,B]);
+
+})();
+</script>
+
+</body>
+</html>
